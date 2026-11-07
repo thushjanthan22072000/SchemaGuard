@@ -1,0 +1,3255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SmartSchema - Database Schema Smell Detection</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+}
+
+:root{
+    --bg:#0b1120;
+    --panel:#111827;
+    --panel2:#172033;
+    --border:#263247;
+    --text:#e5e7eb;
+    --muted:#94a3b8;
+    --primary:#6366f1;
+    --primary2:#818cf8;
+    --green:#22c55e;
+    --yellow:#f59e0b;
+    --red:#ef4444;
+    --cyan:#06b6d4;
+    --shadow:0 15px 40px rgba(0,0,0,.25);
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+    position:fixed;
+    left:0;
+    top:0;
+    bottom:0;
+    width:250px;
+    background:#0d1525;
+    border-right:1px solid var(--border);
+    padding:20px 14px;
+    overflow-y:auto;
+    z-index:10;
+}
+
+.logo{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px;
+    margin-bottom:25px;
+}
+
+.logo-icon{
+    width:42px;
+    height:42px;
+    border-radius:12px;
+    background:linear-gradient(135deg,var(--primary),#06b6d4);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-weight:bold;
+    font-size:20px;
+}
+
+.logo h2{
+    font-size:18px;
+}
+
+.logo span{
+    display:block;
+    font-size:10px;
+    color:var(--muted);
+    margin-top:2px;
+}
+
+.nav-title{
+    color:#64748b;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:1px;
+    padding:12px 12px 7px;
+}
+
+.nav-btn{
+    width:100%;
+    border:none;
+    background:transparent;
+    color:#aeb9ca;
+    text-align:left;
+    padding:11px 13px;
+    border-radius:9px;
+    margin:2px 0;
+    cursor:pointer;
+    transition:.2s;
+    font-size:13px;
+}
+
+.nav-btn:hover{
+    background:#172033;
+    color:white;
+}
+
+.nav-btn.active{
+    background:linear-gradient(90deg,#252a63,#1d2942);
+    color:white;
+    border-left:3px solid var(--primary2);
+}
+
+.nav-icon{
+    display:inline-block;
+    width:25px;
+}
+
+/* MAIN */
+
+.main{
+    margin-left:250px;
+    min-height:100vh;
+}
+
+.topbar{
+    height:70px;
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 30px;
+    background:rgba(11,17,32,.9);
+    position:sticky;
+    top:0;
+    z-index:5;
+    backdrop-filter:blur(10px);
+}
+
+.page-title{
+    font-size:19px;
+    font-weight:700;
+}
+
+.page-subtitle{
+    color:var(--muted);
+    font-size:12px;
+    margin-top:3px;
+}
+
+.status{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    font-size:12px;
+    color:#86efac;
+}
+
+.status-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--green);
+    box-shadow:0 0 10px var(--green);
+}
+
+.content{
+    padding:28px;
+}
+
+/* VIEWS */
+
+.view{
+    display:none;
+}
+
+.view.active{
+    display:block;
+}
+
+/* CARDS */
+
+.cards{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:16px;
+    margin-bottom:22px;
+}
+
+.card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    box-shadow:var(--shadow);
+}
+
+.card-label{
+    color:var(--muted);
+    font-size:12px;
+}
+
+.card-value{
+    font-size:28px;
+    font-weight:800;
+    margin-top:8px;
+}
+
+.card-icon{
+    float:right;
+    width:38px;
+    height:38px;
+    border-radius:10px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:#202a44;
+}
+
+.grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.grid3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:18px;
+}
+
+/* PANELS */
+
+.panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:20px;
+}
+
+.panel-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:17px;
+}
+
+.panel-title h3{
+    font-size:15px;
+}
+
+.panel-title span{
+    color:var(--muted);
+    font-size:11px;
+}
+
+/* SQL */
+
+.sql-box{
+    width:100%;
+    min-height:340px;
+    resize:vertical;
+    background:#080d18;
+    color:#d1d5db;
+    border:1px solid #27344b;
+    border-radius:10px;
+    padding:17px;
+    outline:none;
+    font-family:Consolas,monospace;
+    font-size:13px;
+    line-height:1.65;
+}
+
+.sql-box:focus{
+    border-color:var(--primary);
+    box-shadow:0 0 0 3px rgba(99,102,241,.12);
+}
+
+/* BUTTONS */
+
+.btn{
+    border:none;
+    border-radius:8px;
+    padding:10px 15px;
+    cursor:pointer;
+    font-weight:600;
+    font-size:12px;
+    transition:.2s;
+}
+
+.btn:hover{
+    transform:translateY(-1px);
+}
+
+.btn-primary{
+    background:var(--primary);
+    color:white;
+}
+
+.btn-secondary{
+    background:#253047;
+    color:#dbe4f0;
+}
+
+.btn-success{
+    background:#166534;
+    color:#dcfce7;
+}
+
+.btn-danger{
+    background:#7f1d1d;
+    color:#fee2e2;
+}
+
+.btn-row{
+    display:flex;
+    gap:9px;
+    flex-wrap:wrap;
+    margin-top:13px;
+}
+
+/* TABLE */
+
+.table-wrap{
+    overflow:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+th{
+    color:#94a3b8;
+    font-size:11px;
+    text-align:left;
+    padding:11px;
+    border-bottom:1px solid var(--border);
+    background:#111a2b;
+}
+
+td{
+    padding:11px;
+    border-bottom:1px solid #202b3d;
+    font-size:12px;
+}
+
+tr:hover td{
+    background:#151f31;
+}
+
+.badge{
+    padding:4px 8px;
+    border-radius:20px;
+    font-size:10px;
+    font-weight:700;
+    display:inline-block;
+}
+
+.badge-green{
+    color:#86efac;
+    background:#12351f;
+}
+
+.badge-yellow{
+    color:#fde68a;
+    background:#3a2b0b;
+}
+
+.badge-red{
+    color:#fca5a5;
+    background:#3b1515;
+}
+
+.badge-blue{
+    color:#93c5fd;
+    background:#112b4a;
+}
+
+/* SMELLS */
+
+.smell{
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:15px;
+    margin-bottom:10px;
+    background:#101827;
+}
+
+.smell-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+}
+
+.smell-title{
+    font-weight:700;
+    font-size:13px;
+}
+
+.smell-desc{
+    color:#9ca3af;
+    font-size:12px;
+    margin-top:7px;
+    line-height:1.5;
+}
+
+.severity{
+    padding:4px 8px;
+    border-radius:20px;
+    font-size:9px;
+    font-weight:bold;
+}
+
+/* DIAGRAM */
+
+.diagram{
+    position:relative;
+    min-height:500px;
+    background:
+        linear-gradient(#172033 1px,transparent 1px),
+        linear-gradient(90deg,#172033 1px,transparent 1px);
+    background-size:30px 30px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:auto;
+}
+
+.diagram-inner{
+    position:relative;
+    min-width:900px;
+    min-height:500px;
+}
+
+.entity{
+    position:absolute;
+    width:200px;
+    background:#121d30;
+    border:1px solid #43516a;
+    border-radius:10px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+}
+
+.entity-header{
+    background:#202c45;
+    padding:10px;
+    font-size:13px;
+    font-weight:bold;
+    border-bottom:1px solid #3a4860;
+}
+
+.entity-row{
+    padding:7px 10px;
+    font-size:11px;
+    border-bottom:1px solid #253247;
+    color:#cbd5e1;
+}
+
+.entity-row:last-child{
+    border-bottom:none;
+}
+
+.pk{
+    color:#facc15;
+}
+
+.fk{
+    color:#67e8f9;
+}
+
+/* FORM */
+
+.input{
+    width:100%;
+    background:#0a101c;
+    border:1px solid var(--border);
+    color:white;
+    padding:10px;
+    border-radius:8px;
+    outline:none;
+}
+
+.input:focus{
+    border-color:var(--primary);
+}
+
+label{
+    display:block;
+    color:#94a3b8;
+    font-size:11px;
+    margin-bottom:6px;
+}
+
+.form-group{
+    margin-bottom:13px;
+}
+
+/* EMPTY */
+
+.empty{
+    text-align:center;
+    padding:50px 20px;
+    color:#64748b;
+}
+
+.empty-icon{
+    font-size:38px;
+    margin-bottom:10px;
+}
+
+/* RECOMMENDATION */
+
+.recommend{
+    padding:13px;
+    border-radius:9px;
+    background:#111c2c;
+    border-left:3px solid var(--cyan);
+    margin-bottom:9px;
+    font-size:12px;
+    line-height:1.5;
+}
+
+/* NOTIFICATION */
+
+.toast{
+    position:fixed;
+    right:25px;
+    bottom:25px;
+    background:#1e293b;
+    border:1px solid #475569;
+    padding:13px 17px;
+    border-radius:9px;
+    box-shadow:var(--shadow);
+    display:none;
+    z-index:100;
+    font-size:12px;
+}
+
+/* RESPONSIVE */
+
+@media(max-width:1000px){
+    .cards{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .grid2,
+    .grid3{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:700px){
+    .sidebar{
+        width:70px;
+        padding:12px 7px;
+    }
+
+    .logo h2,
+    .logo span,
+    .nav-title,
+    .nav-btn span:not(.nav-icon){
+        display:none;
+    }
+
+    .logo{
+        justify-content:center;
+    }
+
+    .nav-btn{
+        text-align:center;
+    }
+
+    .main{
+        margin-left:70px;
+    }
+
+    .content{
+        padding:15px;
+    }
+
+    .cards{
+        grid-template-columns:1fr;
+    }
+
+    .topbar{
+        padding:0 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+        <div class="logo-icon">SS</div>
+        <div>
+            <h2>SmartSchema</h2>
+            <span>Database Intelligence</span>
+        </div>
+    </div>
+
+    <div class="nav-title">MAIN</div>
+
+    <button class="nav-btn active" onclick="showView('dashboard',this)">
+        <span class="nav-icon">▦</span><span>Dashboard</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('analyzer',this)">
+        <span class="nav-icon">⌘</span><span>SQL Analyzer</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('builder',this)">
+        <span class="nav-icon">▣</span><span>Schema Builder</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('diagram',this)">
+        <span class="nav-icon">◇</span><span>ER Diagram</span>
+    </button>
+
+    <div class="nav-title">ANALYSIS</div>
+
+    <button class="nav-btn" onclick="showView('smells',this)">
+        <span class="nav-icon">⚠</span><span>Schema Smells</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('normalization',this)">
+        <span class="nav-icon">◎</span><span>Normalization</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('dependencies',this)">
+        <span class="nav-icon">→</span><span>Dependencies</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('keys',this)">
+        <span class="nav-icon">🔑</span><span>Candidate Keys</span>
+    </button>
+
+    <div class="nav-title">TOOLS</div>
+
+    <button class="nav-btn" onclick="showView('advisor',this)">
+        <span class="nav-icon">⌕</span><span>Query Advisor</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('fix',this)">
+        <span class="nav-icon">✦</span><span>Fix My Schema</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('generator',this)">
+        <span class="nav-icon">{ }</span><span>SQL Generator</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('dictionary',this)">
+        <span class="nav-icon">☷</span><span>Data Dictionary</span>
+    </button>
+
+    <button class="nav-btn" onclick="showView('report',this)">
+        <span class="nav-icon">📄</span><span>Reports</span>
+    </button>
+
+</aside>
+
+
+<!-- MAIN -->
+
+<main class="main">
+
+<header class="topbar">
+
+    <div>
+        <div class="page-title" id="pageTitle">
+            Database Dashboard
+        </div>
+
+        <div class="page-subtitle">
+            Intelligent database schema quality analysis
+        </div>
+    </div>
+
+    <div class="status">
+        <span class="status-dot"></span>
+        Frontend Engine Ready
+    </div>
+
+</header>
+
+
+<div class="content">
+
+
+<!-- DASHBOARD -->
+
+<section id="dashboard" class="view active">
+
+    <div class="cards">
+
+        <div class="card">
+            <div class="card-icon">▦</div>
+            <div class="card-label">Tables</div>
+            <div class="card-value" id="statTables">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon">◇</div>
+            <div class="card-label">Columns</div>
+            <div class="card-value" id="statColumns">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon">⚠</div>
+            <div class="card-label">Schema Smells</div>
+            <div class="card-value" id="statSmells">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-icon">✓</div>
+            <div class="card-label">Health Score</div>
+            <div class="card-value" id="statHealth">100%</div>
+        </div>
+
+    </div>
+
+
+    <div class="grid2">
+
+        <div class="panel">
+
+            <div class="panel-title">
+                <h3>Schema Overview</h3>
+                <span>Live analysis</span>
+            </div>
+
+            <div id="dashboardOverview">
+                <div class="empty">
+                    <div class="empty-icon">🗄️</div>
+                    <p>Analyze a SQL schema to see results.</p>
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="panel">
+
+            <div class="panel-title">
+                <h3>Quick Actions</h3>
+            </div>
+
+            <div class="btn-row">
+
+                <button class="btn btn-primary"
+                    onclick="openAnalyzer()">
+                    ⌘ Analyze SQL
+                </button>
+
+                <button class="btn btn-secondary"
+                    onclick="loadSample()">
+                    Load Sample
+                </button>
+
+                <button class="btn btn-success"
+                    onclick="openView('diagram')">
+                    View ER Diagram
+                </button>
+
+            </div>
+
+            <br>
+
+            <div class="recommend">
+                <b>How it works</b><br>
+                Enter your CREATE TABLE statements. SmartSchema
+                parses the structure and identifies common database
+                design problems.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- SQL ANALYZER -->
+
+<section id="analyzer" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>SQL Schema Analyzer</h3>
+                <span>Paste your CREATE TABLE statements below</span>
+            </div>
+
+        </div>
+
+        <textarea
+            id="sqlInput"
+            class="sql-box"
+            placeholder="Paste SQL CREATE TABLE statements here..."></textarea>
+
+        <div class="btn-row">
+
+            <button class="btn btn-primary"
+                onclick="analyzeSQL()">
+                🔍 Analyze Schema
+            </button>
+
+            <button class="btn btn-secondary"
+                onclick="loadSample()">
+                Load Sample
+            </button>
+
+            <button class="btn btn-secondary"
+                onclick="clearSQL()">
+                Clear
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div id="analysisResults"></div>
+
+</section>
+
+
+<!-- BUILDER -->
+
+<section id="builder" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>Schema Builder</h3>
+                <span>Create a table manually</span>
+            </div>
+
+        </div>
+
+        <div class="grid3">
+
+            <div class="form-group">
+                <label>Table Name</label>
+                <input id="newTable" class="input"
+                    placeholder="Customer">
+            </div>
+
+            <div class="form-group">
+                <label>Column Name</label>
+                <input id="newColumn" class="input"
+                    placeholder="CustomerID">
+            </div>
+
+            <div class="form-group">
+                <label>Data Type</label>
+                <select id="newType" class="input">
+                    <option>INT</option>
+                    <option>VARCHAR(100)</option>
+                    <option>TEXT</option>
+                    <option>DATE</option>
+                    <option>DECIMAL(10,2)</option>
+                    <option>BOOLEAN</option>
+                </select>
+            </div>
+
+        </div>
+
+        <div class="btn-row">
+
+            <button class="btn btn-primary"
+                onclick="addColumnToBuilder()">
+                + Add Column
+            </button>
+
+            <button class="btn btn-success"
+                onclick="generateBuilderSQL()">
+                Generate SQL
+            </button>
+
+        </div>
+
+    </div>
+
+    <div class="panel">
+
+        <div class="panel-title">
+            <h3>Current Table</h3>
+        </div>
+
+        <div id="builderTable">
+            <div class="empty">
+                No columns added yet.
+            </div>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- DIAGRAM -->
+
+<section id="diagram" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <h3>Entity Relationship Diagram</h3>
+
+            <span id="diagramInfo">
+                Analyze a schema first
+            </span>
+
+        </div>
+
+        <div class="diagram">
+
+            <div id="diagramInner"
+                class="diagram-inner">
+
+                <div class="empty">
+                    <div class="empty-icon">◇</div>
+                    <p>Your ER diagram will appear here.</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- SMELLS -->
+
+<section id="smells" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>Schema Smell Detection</h3>
+                <span>Database design quality problems</span>
+            </div>
+
+            <span id="smellCount">0 problems</span>
+
+        </div>
+
+        <div id="smellResults">
+
+            <div class="empty">
+                Analyze your schema first.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- NORMALIZATION -->
+
+<section id="normalization" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+            <h3>Normalization Analyzer</h3>
+            <span>Basic structural analysis</span>
+        </div>
+
+        <div id="normalizationResult">
+
+            <div class="empty">
+                Analyze a schema first.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- DEPENDENCIES -->
+
+<section id="dependencies" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>Functional Dependencies</h3>
+                <span>Enter dependencies manually</span>
+            </div>
+
+        </div>
+
+        <textarea
+            id="fdInput"
+            class="sql-box"
+            style="min-height:200px"
+            placeholder="Example:
+
+StudentID -> StudentName, Email
+DepartmentID -> DepartmentName
+CourseID -> CourseName"></textarea>
+
+        <div class="btn-row">
+
+            <button class="btn btn-primary"
+                onclick="analyzeFD()">
+                Analyze Dependencies
+            </button>
+
+        </div>
+
+        <div id="fdResult"></div>
+
+    </div>
+
+</section>
+
+
+<!-- KEYS -->
+
+<section id="keys" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+            <h3>Candidate Key Analysis</h3>
+        </div>
+
+        <div id="keysResult">
+
+            <div class="empty">
+                Analyze a schema first.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ADVISOR -->
+
+<section id="advisor" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>Query & Index Advisor</h3>
+                <span>Frontend heuristic recommendations</span>
+            </div>
+
+        </div>
+
+        <div id="advisorResult">
+
+            <div class="empty">
+                Analyze your schema first.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- FIX -->
+
+<section id="fix" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>Fix My Schema</h3>
+                <span>Automatic improvement suggestions</span>
+            </div>
+
+        </div>
+
+        <div id="fixResult">
+
+            <div class="empty">
+                Analyze your schema first.
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- GENERATOR -->
+
+<section id="generator" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+            <h3>SQL Generator</h3>
+            <span>Generated from analyzed schema</span>
+        </div>
+
+        <textarea
+            id="generatedSQL"
+            class="sql-box"
+            readonly
+            placeholder="Generated SQL will appear here..."></textarea>
+
+        <div class="btn-row">
+
+            <button class="btn btn-primary"
+                onclick="copyGeneratedSQL()">
+                Copy SQL
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- DICTIONARY -->
+
+<section id="dictionary" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+            <h3>Data Dictionary</h3>
+            <span>Complete schema metadata</span>
+        </div>
+
+        <div class="table-wrap">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>TABLE</th>
+                        <th>COLUMN</th>
+                        <th>TYPE</th>
+                        <th>PRIMARY KEY</th>
+                        <th>FOREIGN KEY</th>
+                    </tr>
+                </thead>
+
+                <tbody id="dictionaryBody">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- REPORT -->
+
+<section id="report" class="view">
+
+    <div class="panel">
+
+        <div class="panel-title">
+
+            <div>
+                <h3>Schema Report</h3>
+                <span>Generate analysis report</span>
+            </div>
+
+        </div>
+
+        <div id="reportPreview">
+
+            <div class="empty">
+                Analyze a schema to generate a report.
+            </div>
+
+        </div>
+
+        <div class="btn-row">
+
+            <button class="btn btn-primary"
+                onclick="downloadReport()">
+                📄 Download Report
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+</div>
+</main>
+
+
+<div id="toast" class="toast"></div>
+
+
+<script>
+
+/* =========================================================
+   GLOBAL DATA
+========================================================= */
+
+let schema = {
+    tables: []
+};
+
+let smells = [];
+
+let builderColumns = [];
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
+const titles = {
+
+    dashboard:"Database Dashboard",
+
+    analyzer:"SQL Schema Analyzer",
+
+    builder:"Schema Builder",
+
+    diagram:"Entity Relationship Diagram",
+
+    smells:"Schema Smell Detection",
+
+    normalization:"Normalization Analyzer",
+
+    dependencies:"Functional Dependencies",
+
+    keys:"Candidate Key Analysis",
+
+    advisor:"Query & Index Advisor",
+
+    fix:"Fix My Schema",
+
+    generator:"SQL Generator",
+
+    dictionary:"Data Dictionary",
+
+    report:"Schema Report"
+
+};
+
+
+function showView(id,button){
+
+    document.querySelectorAll(".view")
+        .forEach(v => v.classList.remove("active"));
+
+    document.getElementById(id)
+        .classList.add("active");
+
+    document.querySelectorAll(".nav-btn")
+        .forEach(b => b.classList.remove("active"));
+
+    if(button){
+        button.classList.add("active");
+    }
+
+    document.getElementById("pageTitle")
+        .textContent = titles[id];
+
+}
+
+
+function openView(id){
+
+    const btn =
+        [...document.querySelectorAll(".nav-btn")]
+        .find(b => b.getAttribute("onclick")?.includes(`'${id}'`));
+
+    showView(id,btn);
+}
+
+
+function openAnalyzer(){
+
+    openView("analyzer");
+
+}
+
+
+/* =========================================================
+   SAMPLE SQL
+========================================================= */
+
+const sampleSQL = `
+
+CREATE TABLE Department (
+    DepartmentID INT PRIMARY KEY,
+    DepartmentName VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE Student (
+    StudentID INT PRIMARY KEY,
+    StudentName VARCHAR(100) NOT NULL,
+    Email VARCHAR(150),
+    Phone VARCHAR(20),
+    DepartmentID INT,
+    FOREIGN KEY (DepartmentID)
+        REFERENCES Department(DepartmentID)
+);
+
+CREATE TABLE Course (
+    CourseID INT PRIMARY KEY,
+    CourseName VARCHAR(100),
+    DepartmentID INT,
+    FOREIGN KEY (DepartmentID)
+        REFERENCES Department(DepartmentID)
+);
+
+CREATE TABLE Enrollment (
+    EnrollmentID INT PRIMARY KEY,
+    StudentID INT,
+    CourseID INT,
+    EnrollmentDate DATE,
+    FOREIGN KEY (StudentID)
+        REFERENCES Student(StudentID),
+    FOREIGN KEY (CourseID)
+        REFERENCES Course(CourseID)
+);
+
+`;
+
+
+function loadSample(){
+
+    document.getElementById("sqlInput").value =
+        sampleSQL.trim();
+
+    showToast("Sample database loaded");
+
+    openAnalyzer();
+
+}
+
+
+/* =========================================================
+   CLEAR
+========================================================= */
+
+function clearSQL(){
+
+    document.getElementById("sqlInput").value="";
+
+    schema = {tables:[]};
+
+    smells=[];
+
+    updateUI();
+
+    showToast("SQL cleared");
+
+}
+
+
+/* =========================================================
+   SQL PARSER
+========================================================= */
+
+function parseSQL(sql){
+
+    const tables=[];
+
+    const tableRegex =
+        /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?[`"']?([\w]+)[`"']?\s*\(([\s\S]*?)\)\s*;/gi;
+
+    let match;
+
+    while((match=tableRegex.exec(sql))!==null){
+
+        const tableName=match[1];
+
+        const body=match[2];
+
+        const table={
+            name:tableName,
+            columns:[],
+            primaryKeys:[],
+            foreignKeys:[]
+        };
+
+
+        const lines =
+            body
+            .split(/,(?![^(]*\))/)
+            .map(x=>x.trim())
+            .filter(Boolean);
+
+
+        lines.forEach(line=>{
+
+            let clean=line
+                .replace(/\s+/g," ")
+                .trim();
+
+
+            /* PRIMARY KEY */
+
+            const tablePK =
+                clean.match(
+                    /PRIMARY\s+KEY\s*\(([^)]+)\)/i
+                );
+
+            if(tablePK){
+
+                tablePK[1]
+                    .split(",")
+                    .forEach(k=>{
+                        table.primaryKeys.push(
+                            k.trim().replace(/[`"']/g,"")
+                        );
+                    });
+
+                return;
+            }
+
+
+            /* FOREIGN KEY */
+
+            const fk =
+                clean.match(
+                    /FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+[`"']?(\w+)[`"']?\s*\(([^)]+)\)/i
+                );
+
+            if(fk){
+
+                table.foreignKeys.push({
+
+                    column:fk[1].trim(),
+
+                    refTable:fk[2].trim(),
+
+                    refColumn:fk[3].trim()
+
+                });
+
+                return;
+            }
+
+
+            /* CONSTRAINT FOREIGN KEY */
+
+            const fk2 =
+                clean.match(
+                    /CONSTRAINT\s+\w+\s+FOREIGN\s+KEY\s*\(([^)]+)\)\s+REFERENCES\s+(\w+)\s*\(([^)]+)\)/i
+                );
+
+            if(fk2){
+
+                table.foreignKeys.push({
+
+                    column:fk2[1].trim(),
+
+                    refTable:fk2[2].trim(),
+
+                    refColumn:fk2[3].trim()
+
+                });
+
+                return;
+            }
+
+
+            /* COLUMN */
+
+            const col =
+                clean.match(
+                    /^([`"']?\w+[`"']?)\s+([A-Za-z]+(?:\s*\([^)]*\))?)\s*(.*)$/i
+                );
+
+
+            if(col){
+
+                let name=
+                    col[1].replace(/[`"']/g,"");
+
+                let type=col[2];
+
+                let options=col[3] || "";
+
+                const isPK =
+                    /PRIMARY\s+KEY/i.test(options);
+
+                if(isPK){
+                    table.primaryKeys.push(name);
+                }
+
+                table.columns.push({
+
+                    name:name,
+
+                    type:type,
+
+                    nullable:!/\bNOT\s+NULL\b/i.test(options),
+
+                    unique:/\bUNIQUE\b/i.test(options),
+
+                    primaryKey:isPK
+
+                });
+
+            }
+
+        });
+
+
+        /* Add FK information */
+
+        table.foreignKeys.forEach(fk=>{
+
+            const col=
+                table.columns.find(
+                    c=>c.name.toLowerCase()===
+                    fk.column.toLowerCase()
+                );
+
+            if(col){
+                col.foreignKey=true;
+            }
+
+        });
+
+
+        tables.push(table);
+
+    }
+
+
+    return tables;
+
+}
+
+
+/* =========================================================
+   ANALYZE
+========================================================= */
+
+function analyzeSQL(){
+
+    const sql =
+        document.getElementById("sqlInput").value.trim();
+
+
+    if(!sql){
+
+        showToast("Please enter SQL schema first");
+
+        return;
+
+    }
+
+
+    const tables=parseSQL(sql);
+
+
+    if(tables.length===0){
+
+        showToast(
+            "No CREATE TABLE statements detected"
+        );
+
+        return;
+
+    }
+
+
+    schema={
+        tables:tables
+    };
+
+
+    detectSmells();
+
+    updateUI();
+
+    showToast(
+        `${tables.length} table(s) analyzed successfully`
+    );
+
+}
+
+
+/* =========================================================
+   SMELL DETECTION
+========================================================= */
+
+function detectSmells(){
+
+    smells=[];
+
+
+    schema.tables.forEach(table=>{
+
+        /* No primary key */
+
+        if(table.primaryKeys.length===0){
+
+            smells.push({
+
+                type:"Missing Primary Key",
+
+                severity:"High",
+
+                table:table.name,
+
+                description:
+                `Table "${table.name}" does not have a primary key.`,
+
+                fix:
+                "Add a stable primary key column such as ID."
+
+            });
+
+        }
+
+
+        /* Too many columns */
+
+        if(table.columns.length>12){
+
+            smells.push({
+
+                type:"Wide Table",
+
+                severity:"Medium",
+
+                table:table.name,
+
+                description:
+                `"${table.name}" contains ${table.columns.length} columns.`,
+
+                fix:
+                "Review whether the table contains multiple unrelated entities."
+
+            });
+
+        }
+
+
+        /* Repeated column names */
+
+        const names=
+            table.columns.map(c=>c.name.toLowerCase());
+
+        const duplicates=
+            names.filter(
+                (n,i)=>names.indexOf(n)!==i
+            );
+
+        if(duplicates.length){
+
+            smells.push({
+
+                type:"Duplicate Column",
+
+                severity:"Medium",
+
+                table:table.name,
+
+                description:
+                `Duplicate column names detected: ${duplicates.join(", ")}.`,
+
+                fix:
+                "Remove or rename duplicate attributes."
+
+            });
+
+        }
+
+
+        /* Suspicious repeating columns */
+
+        const repeating=
+            table.columns.filter(c=>
+                /(_1|_2|_3|1|2|3)$/i.test(c.name)
+            );
+
+
+        if(repeating.length>=2){
+
+            smells.push({
+
+                type:"Repeating Group",
+
+                severity:"High",
+
+                table:table.name,
+
+                description:
+                `Possible repeating attributes found: ${repeating.map(x=>x.name).join(", ")}.`,
+
+                fix:
+                "Consider creating a separate child table."
+
+            });
+
+        }
+
+
+        /* ID without FK */
+
+        table.columns.forEach(col=>{
+
+            if(
+                /id$/i.test(col.name) &&
+                !table.primaryKeys
+                    .map(x=>x.toLowerCase())
+                    .includes(col.name.toLowerCase()) &&
+                !col.foreignKey
+            ){
+
+                smells.push({
+
+                    type:"Possible Unresolved Relationship",
+
+                    severity:"Low",
+
+                    table:table.name,
+
+                    description:
+                    `"${col.name}" looks like an ID but is not declared as a foreign key.`,
+
+                    fix:
+                    "Check whether this column should reference another table."
+
+                });
+
+            }
+
+        });
+
+
+        /* Nullable primary-like columns */
+
+        table.columns.forEach(col=>{
+
+            if(
+                /id$/i.test(col.name) &&
+                col.nullable &&
+                !col.primaryKey
+            ){
+
+                smells.push({
+
+                    type:"Nullable Identifier",
+
+                    severity:"Medium",
+
+                    table:table.name,
+
+                    description:
+                    `"${col.name}" is nullable and looks like an identifier.`,
+
+                    fix:
+                    "Use NOT NULL if the identifier is mandatory."
+
+                });
+
+            }
+
+        });
+
+    });
+
+
+    /* Duplicate table names impossible through parser */
+
+}
+
+
+/* =========================================================
+   UPDATE EVERYTHING
+========================================================= */
+
+function updateUI(){
+
+    const tables=schema.tables;
+
+    let columns=0;
+
+    tables.forEach(t=>{
+        columns+=t.columns.length;
+    });
+
+
+    document.getElementById("statTables")
+        .textContent=tables.length;
+
+    document.getElementById("statColumns")
+        .textContent=columns;
+
+    document.getElementById("statSmells")
+        .textContent=smells.length;
+
+
+    let health=
+        Math.max(
+            0,
+            100 - smells.length*8
+        );
+
+
+    document.getElementById("statHealth")
+        .textContent=health+"%";
+
+
+    renderOverview();
+
+    renderSmells();
+
+    renderNormalization();
+
+    renderKeys();
+
+    renderAdvisor();
+
+    renderFix();
+
+    renderDictionary();
+
+    renderDiagram();
+
+    generateSQL();
+
+    renderReport();
+
+}
+
+
+/* =========================================================
+   OVERVIEW
+========================================================= */
+
+function renderOverview(){
+
+    const box=
+        document.getElementById("dashboardOverview");
+
+
+    if(!schema.tables.length){
+
+        box.innerHTML=`
+            <div class="empty">
+                <div class="empty-icon">🗄️</div>
+                <p>No schema analyzed yet.</p>
+            </div>
+        `;
+
+        return;
+
+    }
+
+
+    let html=`
+
+    <div class="table-wrap">
+
+    <table>
+
+    <thead>
+
+    <tr>
+        <th>TABLE</th>
+        <th>COLUMNS</th>
+        <th>PRIMARY KEY</th>
+        <th>FOREIGN KEYS</th>
+    </tr>
+
+    </thead>
+
+    <tbody>
+    `;
+
+
+    schema.tables.forEach(t=>{
+
+        html+=`
+
+        <tr>
+
+            <td><b>${escapeHTML(t.name)}</b></td>
+
+            <td>${t.columns.length}</td>
+
+            <td>
+                ${
+                    t.primaryKeys.length
+                    ? `<span class="badge badge-green">${t.primaryKeys.join(", ")}</span>`
+                    : `<span class="badge badge-red">Missing</span>`
+                }
+            </td>
+
+            <td>${t.foreignKeys.length}</td>
+
+        </tr>
+
+        `;
+
+    });
+
+
+    html+=`
+    </tbody>
+    </table>
+    </div>
+    `;
+
+
+    box.innerHTML=html;
+
+}
+
+
+/* =========================================================
+   SMELLS UI
+========================================================= */
+
+function renderSmells(){
+
+    const box=
+        document.getElementById("smellResults");
+
+    document.getElementById("smellCount")
+        .textContent=
+        `${smells.length} problem${smells.length!==1?"s":""}`;
+
+
+    if(!smells.length){
+
+        box.innerHTML=`
+
+        <div class="empty">
+
+            <div class="empty-icon">✓</div>
+
+            <h3>No major schema smells detected</h3>
+
+            <p>Your schema passed the implemented checks.</p>
+
+        </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    box.innerHTML=
+        smells.map(s=>{
+
+            let cls=
+                s.severity==="High"
+                ?"badge-red"
+                :
+                s.severity==="Medium"
+                ?"badge-yellow"
+                :
+                "badge-blue";
+
+
+            return `
+
+            <div class="smell">
+
+                <div class="smell-header">
+
+                    <div>
+
+                        <div class="smell-title">
+                            ${escapeHTML(s.type)}
+                        </div>
+
+                        <div style="color:#64748b;font-size:10px;margin-top:3px">
+                            Table: ${escapeHTML(s.table)}
+                        </div>
+
+                    </div>
+
+                    <span class="severity ${cls}">
+                        ${s.severity}
+                    </span>
+
+                </div>
+
+                <div class="smell-desc">
+                    ${escapeHTML(s.description)}
+                </div>
+
+                <div class="recommend" style="margin-top:10px">
+                    <b>Recommendation:</b>
+                    ${escapeHTML(s.fix)}
+                </div>
+
+            </div>
+
+            `;
+
+        }).join("");
+
+}
+
+
+/* =========================================================
+   NORMALIZATION
+========================================================= */
+
+function renderNormalization(){
+
+    const box=
+        document.getElementById("normalizationResult");
+
+
+    if(!schema.tables.length){
+
+        box.innerHTML=`
+        <div class="empty">
+            Analyze a schema first.
+        </div>`;
+
+        return;
+
+    }
+
+
+    let html="";
+
+
+    schema.tables.forEach(t=>{
+
+        let first=true;
+
+        let second=true;
+
+        let third=true;
+
+
+        /* repeating groups */
+
+        if(
+            t.columns.filter(
+                c=>/_1|_2|_3/i.test(c.name)
+            ).length
+        ){
+
+            first=false;
+
+        }
+
+
+        /* composite PK + non-key columns */
+
+        if(t.primaryKeys.length>1){
+
+            const nonKeys=
+                t.columns.filter(
+                    c=>!t.primaryKeys.includes(c.name)
+                );
+
+            if(nonKeys.length){
+
+                second=false;
+
+            }
+
+        }
+
+
+        /* ID-like transitive candidates */
+
+        const idColumns=
+            t.columns.filter(
+                c=>
+                /id$/i.test(c.name) &&
+                !t.primaryKeys.includes(c.name)
+            );
+
+
+        if(idColumns.length){
+
+            third=false;
+
+        }
+
+
+        let level=
+            !first ? "Below 1NF" :
+            !second ? "1NF / review 2NF" :
+            !third ? "2NF / review 3NF" :
+            "Likely 3NF";
+
+
+        html+=`
+
+        <div class="recommend">
+
+            <b>${escapeHTML(t.name)}</b><br>
+
+            <span style="color:#94a3b8">
+                1NF:
+            </span>
+            ${first
+                ? '<span class="badge badge-green">PASS</span>'
+                : '<span class="badge badge-red">REVIEW</span>'}
+
+            &nbsp;
+
+            <span style="color:#94a3b8">
+                2NF:
+            </span>
+            ${second
+                ? '<span class="badge badge-green">PASS</span>'
+                : '<span class="badge badge-yellow">REVIEW</span>'}
+
+            &nbsp;
+
+            <span style="color:#94a3b8">
+                3NF:
+            </span>
+            ${third
+                ? '<span class="badge badge-green">LIKELY</span>'
+                : '<span class="badge badge-yellow">REVIEW</span>'}
+
+            <br><br>
+
+            Overall assessment:
+            <b>${level}</b>
+
+        </div>
+
+        `;
+
+    });
+
+
+    box.innerHTML=html;
+
+}
+
+
+/* =========================================================
+   CANDIDATE KEYS
+========================================================= */
+
+function renderKeys(){
+
+    const box=
+        document.getElementById("keysResult");
+
+
+    if(!schema.tables.length){
+
+        box.innerHTML=
+        `<div class="empty">Analyze a schema first.</div>`;
+
+        return;
+
+    }
+
+
+    box.innerHTML=
+        schema.tables.map(t=>{
+
+            let keys=[];
+
+
+            if(t.primaryKeys.length){
+
+                keys.push(t.primaryKeys.join(" + "));
+
+            }
+
+
+            const uniqueColumns=
+                t.columns.filter(
+                    c=>c.unique
+                );
+
+
+            uniqueColumns.forEach(c=>{
+
+                if(!keys.includes(c.name)){
+                    keys.push(c.name);
+                }
+
+            });
+
+
+            if(!keys.length){
+
+                return `
+
+                <div class="recommend">
+
+                    <b>${escapeHTML(t.name)}</b>
+
+                    <br>
+
+                    <span class="badge badge-red">
+                        No obvious candidate key
+                    </span>
+
+                    <p style="margin-top:7px;color:#94a3b8">
+                    Add a primary key or UNIQUE identifier.
+                    </p>
+
+                </div>
+
+                `;
+
+            }
+
+
+            return `
+
+            <div class="recommend">
+
+                <b>${escapeHTML(t.name)}</b>
+
+                <br>
+
+                Candidate key(s):
+
+                <b>${keys.map(escapeHTML).join(", ")}</b>
+
+            </div>
+
+            `;
+
+        }).join("");
+
+}
+
+
+/* =========================================================
+   ADVISOR
+========================================================= */
+
+function renderAdvisor(){
+
+    const box=
+        document.getElementById("advisorResult");
+
+
+    if(!schema.tables.length){
+
+        box.innerHTML=
+        `<div class="empty">Analyze a schema first.</div>`;
+
+        return;
+
+    }
+
+
+    let recommendations=[];
+
+
+    schema.tables.forEach(t=>{
+
+        if(t.primaryKeys.length){
+
+            recommendations.push(
+                `Consider indexing frequently searched columns in "${t.name}". The primary key is already indexed in most database systems.`
+            );
+
+        }
+
+
+        t.foreignKeys.forEach(fk=>{
+
+            recommendations.push(
+                `Consider an index on "${t.name}.${fk.column}" because it is used as a foreign key.`
+            );
+
+        });
+
+
+        t.columns.forEach(c=>{
+
+            if(
+                c.unique ||
+                /email/i.test(c.name)
+            ){
+
+                recommendations.push(
+                    `Consider a UNIQUE index on "${t.name}.${c.name}" if duplicate values are not allowed.`
+                );
+
+            }
+
+        });
+
+    });
+
+
+    if(!recommendations.length){
+
+        recommendations.push(
+            "No obvious indexing recommendations were found."
+        );
+
+    }
+
+
+    box.innerHTML=
+        recommendations.map(x=>
+            `<div class="recommend">⚡ ${escapeHTML(x)}</div>`
+        ).join("");
+
+}
+
+
+/* =========================================================
+   FIX SCHEMA
+========================================================= */
+
+function renderFix(){
+
+    const box=
+        document.getElementById("fixResult");
+
+
+    if(!schema.tables.length){
+
+        box.innerHTML=
+        `<div class="empty">Analyze a schema first.</div>`;
+
+        return;
+
+    }
+
+
+    if(!smells.length){
+
+        box.innerHTML=`
+
+        <div class="empty">
+
+            <div class="empty-icon">✓</div>
+
+            <h3>No automatic fixes required</h3>
+
+        </div>`;
+
+        return;
+
+    }
+
+
+    box.innerHTML=
+        smells.map(s=>`
+
+        <div class="recommend">
+
+            <b>${escapeHTML(s.type)}</b>
+
+            <br>
+
+            Table:
+            <b>${escapeHTML(s.table)}</b>
+
+            <br><br>
+
+            <span style="color:#94a3b8">
+                Suggested fix:
+            </span>
+
+            ${escapeHTML(s.fix)}
+
+        </div>
+
+        `).join("");
+
+}
+
+
+/* =========================================================
+   DATA DICTIONARY
+========================================================= */
+
+function renderDictionary(){
+
+    const body=
+        document.getElementById("dictionaryBody");
+
+
+    if(!schema.tables.length){
+
+        body.innerHTML=`
+
+        <tr>
+            <td colspan="5" style="text-align:center;color:#64748b">
+                No schema analyzed.
+            </td>
+        </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    let html="";
+
+
+    schema.tables.forEach(t=>{
+
+        t.columns.forEach(c=>{
+
+            const fk=
+                t.foreignKeys.find(
+                    f=>
+                    f.column.toLowerCase()===
+                    c.name.toLowerCase()
+                );
+
+
+            html+=`
+
+            <tr>
+
+                <td>${escapeHTML(t.name)}</td>
+
+                <td>${escapeHTML(c.name)}</td>
+
+                <td>${escapeHTML(c.type)}</td>
+
+                <td>
+                    ${
+                        c.primaryKey
+                        ? '<span class="badge badge-green">YES</span>'
+                        : '<span class="badge badge-blue">NO</span>'
+                    }
+                </td>
+
+                <td>
+
+                    ${
+                        fk
+                        ?
+                        `<span class="badge badge-blue">
+                            ${escapeHTML(fk.refTable)}.${escapeHTML(fk.refColumn)}
+                        </span>`
+                        :
+                        '<span class="badge badge-blue">NO</span>'
+                    }
+
+                </td>
+
+            </tr>
+
+            `;
+
+        });
+
+    });
+
+
+    body.innerHTML=html;
+
+}
+
+
+/* =========================================================
+   ER DIAGRAM
+========================================================= */
+
+function renderDiagram(){
+
+    const inner=
+        document.getElementById("diagramInner");
+
+
+    if(!schema.tables.length){
+
+        inner.innerHTML=`
+
+        <div class="empty">
+
+            <div class="empty-icon">◇</div>
+
+            <p>Your ER diagram will appear here.</p>
+
+        </div>`;
+
+        return;
+
+    }
+
+
+    inner.innerHTML="";
+
+
+    const positions=[
+        [30,30],
+        [350,30],
+        [670,30],
+        [180,270],
+        [500,270],
+        [350,440]
+    ];
+
+
+    schema.tables.forEach((t,index)=>{
+
+        const entity=
+            document.createElement("div");
+
+        entity.className="entity";
+
+
+        const pos=
+            positions[index % positions.length];
+
+
+        entity.style.left=pos[0]+"px";
+
+        entity.style.top=pos[1]+"px";
+
+
+        let html=`
+
+        <div class="entity-header">
+            🗄️ ${escapeHTML(t.name)}
+        </div>
+        `;
+
+
+        t.columns.forEach(c=>{
+
+            let cls="";
+
+
+            if(c.primaryKey){
+                cls="pk";
+            }
+
+            if(c.foreignKey){
+                cls="fk";
+            }
+
+
+            html+=`
+
+            <div class="entity-row ${cls}">
+
+                ${
+                    c.primaryKey
+                    ? "🔑"
+                    : c.foreignKey
+                    ? "🔗"
+                    : "•"
+                }
+
+                ${escapeHTML(c.name)}
+
+                <span style="float:right;color:#64748b">
+                    ${escapeHTML(c.type)}
+                </span>
+
+            </div>
+
+            `;
+
+        });
+
+
+        entity.innerHTML=html;
+
+        inner.appendChild(entity);
+
+    });
+
+
+    document.getElementById("diagramInfo")
+        .textContent=
+        `${schema.tables.length} entities`;
+
+}
+
+
+/* =========================================================
+   FUNCTIONAL DEPENDENCIES
+========================================================= */
+
+function analyzeFD(){
+
+    const input=
+        document.getElementById("fdInput")
+        .value.trim();
+
+
+    const box=
+        document.getElementById("fdResult");
+
+
+    if(!input){
+
+        box.innerHTML=`
+        <div class="empty">
+            Enter functional dependencies first.
+        </div>`;
+
+        return;
+
+    }
+
+
+    const lines=
+        input.split("\n")
+        .map(x=>x.trim())
+        .filter(Boolean);
+
+
+    let html=`<div style="margin-top:18px">`;
+
+
+    lines.forEach(line=>{
+
+        const parts=line.split("->");
+
+
+        if(parts.length!==2){
+
+            html+=`
+
+            <div class="recommend">
+                ⚠ Invalid dependency:
+                ${escapeHTML(line)}
+            </div>
+
+            `;
+
+            return;
+
+        }
+
+
+        const lhs=parts[0].trim();
+
+        const rhs=parts[1].trim();
+
+
+        html+=`
+
+        <div class="recommend">
+
+            <b>${escapeHTML(lhs)}</b>
+
+            <span style="color:#06b6d4">
+                →
+            </span>
+
+            <b>${escapeHTML(rhs)}</b>
+
+            <br>
+
+            <span style="color:#94a3b8">
+                Functional dependency detected.
+            </span>
+
+        </div>
+
+        `;
+
+    });
+
+
+    html+="</div>";
+
+    box.innerHTML=html;
+
+}
+
+
+/* =========================================================
+   SQL GENERATOR
+========================================================= */
+
+function generateSQL(){
+
+    const output=
+        document.getElementById("generatedSQL");
+
+
+    if(!schema.tables.length){
+
+        output.value="";
+
+        return;
+
+    }
+
+
+    let sql="";
+
+
+    schema.tables.forEach(t=>{
+
+        sql+=`CREATE TABLE ${t.name} (\n`;
+
+
+        const lines=[];
+
+
+        t.columns.forEach(c=>{
+
+            let line=
+                `    ${c.name} ${c.type}`;
+
+
+            if(c.primaryKey &&
+                t.primaryKeys.length===1){
+
+                line+=" PRIMARY KEY";
+
+            }
+
+
+            if(!c.nullable){
+
+                line+=" NOT NULL";
+
+            }
+
+
+            if(c.unique){
+
+                line+=" UNIQUE";
+
+            }
+
+
+            lines.push(line);
+
+        });
+
+
+        if(t.primaryKeys.length>1){
+
+            lines.push(
+                `    PRIMARY KEY (${t.primaryKeys.join(", ")})`
+            );
+
+        }
+
+
+        t.foreignKeys.forEach(fk=>{
+
+            lines.push(
+                `    FOREIGN KEY (${fk.column}) REFERENCES ${fk.refTable}(${fk.refColumn})`
+            );
+
+        });
+
+
+        sql+=lines.join(",\n");
+
+        sql+="\n);\n\n";
+
+    });
+
+
+    output.value=sql.trim();
+
+}
+
+
+/* =========================================================
+   COPY SQL
+========================================================= */
+
+function copyGeneratedSQL(){
+
+    const text=
+        document.getElementById("generatedSQL").value;
+
+
+    if(!text){
+
+        showToast("No SQL generated");
+
+        return;
+
+    }
+
+
+    navigator.clipboard.writeText(text)
+        .then(()=>{
+            showToast("SQL copied to clipboard");
+        });
+
+}
+
+
+/* =========================================================
+   BUILDER
+========================================================= */
+
+function addColumnToBuilder(){
+
+    const table=
+        document.getElementById("newTable")
+        .value.trim();
+
+
+    const column=
+        document.getElementById("newColumn")
+        .value.trim();
+
+
+    const type=
+        document.getElementById("newType")
+        .value;
+
+
+    if(!table || !column){
+
+        showToast(
+            "Enter table name and column name"
+        );
+
+        return;
+
+    }
+
+
+    builderColumns.push({
+
+        table,
+        column,
+        type
+
+    });
+
+
+    renderBuilder();
+
+
+    document.getElementById("newColumn")
+        .value="";
+
+
+}
+
+
+function renderBuilder(){
+
+    const box=
+        document.getElementById("builderTable");
+
+
+    if(!builderColumns.length){
+
+        box.innerHTML=`
+        <div class="empty">
+            No columns added yet.
+        </div>`;
+
+        return;
+
+    }
+
+
+    box.innerHTML=`
+
+    <div class="table-wrap">
+
+    <table>
+
+    <thead>
+
+    <tr>
+        <th>TABLE</th>
+        <th>COLUMN</th>
+        <th>TYPE</th>
+    </tr>
+
+    </thead>
+
+    <tbody>
+
+    ${
+        builderColumns.map(c=>`
+
+        <tr>
+
+            <td>${escapeHTML(c.table)}</td>
+
+            <td>${escapeHTML(c.column)}</td>
+
+            <td>${escapeHTML(c.type)}</td>
+
+        </tr>
+
+        `).join("")
+    }
+
+    </tbody>
+
+    </table>
+
+    </div>
+
+    `;
+
+}
+
+
+function generateBuilderSQL(){
+
+    if(!builderColumns.length){
+
+        showToast("Add columns first");
+
+        return;
+
+    }
+
+
+    const grouped={};
+
+
+    builderColumns.forEach(c=>{
+
+        if(!grouped[c.table]){
+            grouped[c.table]=[];
+        }
+
+        grouped[c.table].push(c);
+
+    });
+
+
+    let sql="";
+
+
+    Object.keys(grouped).forEach(table=>{
+
+        sql+=`CREATE TABLE ${table} (\n`;
+
+        sql+=grouped[table]
+            .map(c=>`    ${c.column} ${c.type}`)
+            .join(",\n");
+
+        sql+="\n);\n\n";
+
+    });
+
+
+    document.getElementById("sqlInput")
+        .value=sql.trim();
+
+
+    openAnalyzer();
+
+    showToast("SQL generated from Schema Builder");
+
+}
+
+
+/* =========================================================
+   REPORT
+========================================================= */
+
+function renderReport(){
+
+    const box=
+        document.getElementById("reportPreview");
+
+
+    if(!schema.tables.length){
+
+        box.innerHTML=`
+        <div class="empty">
+            Analyze a schema first.
+        </div>`;
+
+        return;
+
+    }
+
+
+    let columns=0;
+
+    schema.tables.forEach(t=>{
+        columns+=t.columns.length;
+    });
+
+
+    const health=
+        document.getElementById("statHealth").textContent;
+
+
+    box.innerHTML=`
+
+    <div class="recommend">
+
+        <b>SMARTSCHEMA ANALYSIS REPORT</b>
+
+        <br><br>
+
+        Tables:
+        <b>${schema.tables.length}</b>
+
+        <br>
+
+        Columns:
+        <b>${columns}</b>
+
+        <br>
+
+        Schema Smells:
+        <b>${smells.length}</b>
+
+        <br>
+
+        Health Score:
+        <b>${health}</b>
+
+    </div>
+
+
+    <div class="panel"
+         style="background:#0b1322">
+
+        <h3 style="margin-bottom:12px">
+            Detected Problems
+        </h3>
+
+        ${
+            smells.length
+            ?
+            smells.map(s=>
+                `<div class="recommend">
+                    <b>${escapeHTML(s.type)}</b>
+                    —
+                    ${escapeHTML(s.description)}
+                </div>`
+            ).join("")
+            :
+            "No major problems detected."
+        }
+
+    </div>
+
+    `;
+
+}
+
+
+function downloadReport(){
+
+    if(!schema.tables.length){
+
+        showToast("Analyze a schema first");
+
+        return;
+
+    }
+
+
+    let text="SMARTSCHEMA DATABASE REPORT\n";
+
+    text+="================================\n\n";
+
+
+    text+=
+        `Tables: ${schema.tables.length}\n`;
+
+
+    const columns=
+        schema.tables.reduce(
+            (sum,t)=>sum+t.columns.length,
+            0
+        );
+
+
+    text+=
+        `Columns: ${columns}\n`;
+
+
+    text+=
+        `Schema Smells: ${smells.length}\n`;
+
+
+    text+=
+        `Health Score: ${document.getElementById("statHealth").textContent}\n\n`;
+
+
+    text+="SCHEMA SMELLS\n";
+
+    text+="-------------\n";
+
+
+    if(!smells.length){
+
+        text+="No major smells detected.\n";
+
+    }
+    else{
+
+        smells.forEach((s,i)=>{
+
+            text+=
+            `${i+1}. ${s.type} [${s.severity}]\n`;
+
+            text+=
+            `Table: ${s.table}\n`;
+
+            text+=
+            `Description: ${s.description}\n`;
+
+            text+=
+            `Recommendation: ${s.fix}\n\n`;
+
+        });
+
+    }
+
+
+    const blob=
+        new Blob([text],{
+            type:"text/plain"
+        });
+
+
+    const url=
+        URL.createObjectURL(blob);
+
+
+    const a=
+        document.createElement("a");
+
+
+    a.href=url;
+
+    a.download=
+        "SmartSchema_Report.txt";
+
+
+    a.click();
+
+
+    URL.revokeObjectURL(url);
+
+
+    showToast("Report downloaded");
+
+}
+
+
+/* =========================================================
+   UTILITY
+========================================================= */
+
+function escapeHTML(value){
+
+    return String(value)
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+
+}
+
+
+function showToast(message){
+
+    const toast=
+        document.getElementById("toast");
+
+
+    toast.textContent=message;
+
+    toast.style.display="block";
+
+
+    clearTimeout(window.toastTimer);
+
+
+    window.toastTimer=
+        setTimeout(()=>{
+
+            toast.style.display="none";
+
+        },2500);
+
+}
+
+
+/* =========================================================
+   STARTUP
+========================================================= */
+
+window.addEventListener("DOMContentLoaded",()=>{
+
+    document.getElementById("sqlInput")
+        .value=sampleSQL.trim();
+
+    renderBuilder();
+
+});
+
+</script>
+
+</body>
+</html>
